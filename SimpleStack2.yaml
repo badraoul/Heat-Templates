@@ -1,0 +1,53 @@
+heat_template_version: 2013-05-23
+
+description: Simple template to deploy a two compute instances, create volume and attach it.  Also creates new floating IP and attaches to web server
+
+parameters:
+  key_name:
+    type: string
+    label: Key Name
+    description: Name of key-pair to be used for compute instance
+
+
+
+resources:
+  my_web_instance:
+    type: OS::Nova::Server
+    properties:
+      key_name: { get_param: key_name }
+      image: Cirros.0.3.1.raw
+      flavor: m1.small
+      networks:
+        - network: demo1-1029
+
+web_floating_IP:
+     type: OS::Nova::FloatingIP
+     properties: 
+        pool: demo1
+
+  web_floating_IP_att:
+     type: OS::Nova::FloatingIPAssociation
+     properties:
+        floating_ip:  { get_resource: web_floating_IP }
+        server_id: { get_resource: my_web_instance }
+
+  my_DB_Instance:
+    type: OS::Nova::Server
+    properties:
+      key_name: { get_param: key_name }
+      image: Cirros.0.3.1.raw
+      flavor: m1.medium
+      networks:
+        - network: demo1-1029
+
+  DB_Volume:
+     type:  OS::Cinder::Volume
+     properties:
+        size: 20
+
+  DB_Volume_att:
+     type:  OS::Cinder::VolumeAttachment
+     properties:
+        instance_uuid: { get_resource: my_DB_Instance }
+        volume_id: { get_resource: DB_Volume }
+
